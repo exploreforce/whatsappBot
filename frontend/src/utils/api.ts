@@ -1,0 +1,120 @@
+import axios from 'axios';
+import { ApiResponse, BotConfig, Appointment, AvailabilityConfig, CreateAppointmentRequest, ChatMessage, TestChatSession, Service, CreateServiceRequest } from '@/types';
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: `${BASE_URL}/api`,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    console.error('API Error:', error);
+    throw error.response?.data || error;
+  }
+);
+
+// Bot Configuration API
+export const botApi = {
+  getConfig: async (): Promise<ApiResponse<BotConfig>> => {
+    return api.get('/bot/config');
+  },
+
+  updateConfig: async (config: Partial<BotConfig>): Promise<ApiResponse<BotConfig>> => {
+    return api.put('/bot/config', config);
+  },
+
+  testChat: async (messages: ChatMessage[], sessionId: string): Promise<ApiResponse<{ response: ChatMessage }>> => {
+    return api.post('/bot/test-chat', { messages, sessionId });
+  },
+
+  createTestChatSession: async (): Promise<ApiResponse<TestChatSession>> => {
+    return api.post('/bot/test-chat/session');
+  },
+};
+
+// Appointments API
+export const appointmentsApi = {
+  getAll: async (params?: {
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+  }): Promise<ApiResponse<Appointment[]>> => {
+    return api.get('/appointments', { params });
+  },
+
+  create: async (appointment: CreateAppointmentRequest): Promise<ApiResponse<Appointment>> => {
+    return api.post('/appointments', appointment);
+  },
+
+  update: async (id: string, updates: Partial<Appointment>): Promise<ApiResponse<Appointment>> => {
+    return api.put(`/appointments/${id}`, updates);
+  },
+
+  cancel: async (id: string): Promise<ApiResponse<{ appointmentId: string }>> => {
+    return api.delete(`/appointments/${id}`);
+  },
+};
+
+// Calendar API
+export const calendarApi = {
+  getAvailability: async (params?: {
+    date?: string;
+    duration?: number;
+  }): Promise<ApiResponse<{ date: string; availableSlots: Array<{ start: string; end: string }> }>> => {
+    return api.get('/calendar/availability', { params });
+  },
+
+  updateAvailability: async (data: {
+    weeklySchedule: any;
+    blackoutDates: any[];
+  }): Promise<ApiResponse<AvailabilityConfig>> => {
+    return api.put('/calendar/availability', data);
+  },
+
+  getOverview: async (params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<ApiResponse<{
+    period: { startDate: string; endDate: string };
+    totalAppointments: number;
+    availableSlots: number;
+    busySlots: number;
+  }>> => {
+    return api.get('/calendar/overview', { params });
+  },
+};
+
+// Services API
+export const servicesApi = {
+  getAll: async (botConfigId: string): Promise<ApiResponse<Service[]>> => {
+    return api.get(`/services/${botConfigId}`);
+  },
+
+  create: async (botConfigId: string, service: CreateServiceRequest): Promise<ApiResponse<Service>> => {
+    return api.post(`/services/${botConfigId}`, service);
+  },
+
+  update: async (serviceId: string, updates: Partial<CreateServiceRequest>): Promise<ApiResponse<Service>> => {
+    return api.put(`/services/${serviceId}`, updates);
+  },
+
+  delete: async (serviceId: string): Promise<ApiResponse<{ serviceId: string }>> => {
+    return api.delete(`/services/${serviceId}`);
+  },
+};
+
+// Health check
+export const healthApi = {
+  checkStatus: async (): Promise<{ status: string; timestamp: string; environment: string }> => {
+    return axios.get(`${BASE_URL}/health`).then(response => response.data);
+  },
+};
+
+export default api; 

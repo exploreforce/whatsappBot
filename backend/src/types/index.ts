@@ -123,6 +123,7 @@ export interface ChatMessage {
   metadata?: {
     toolCalls?: ToolCall[];
     appointmentId?: string;
+    status?: 'draft' | 'sent';
   };
 }
 

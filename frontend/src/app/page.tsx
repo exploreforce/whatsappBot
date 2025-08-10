@@ -18,23 +18,29 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold text-gray-900">WhatsApp Bot Manager</h1>
             </div>
             <nav className="flex space-x-4">
-              <Link 
-                href="/config" 
+              <Link
+                href="/config"
                 className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Configuration
               </Link>
-              <Link 
-                href="/calendar" 
+              <Link
+                href="/calendar"
                 className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Calendar
               </Link>
-              <Link 
-                href="/test-chat" 
+              <Link
+                href="/test-chat"
                 className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
               >
                 Test Chat
+              </Link>
+              <Link
+                href="/mobile"
+                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Mobile View
               </Link>
             </nav>
           </div>

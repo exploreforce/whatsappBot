@@ -55,16 +55,33 @@ class WhatsAppService {
     const aiResponse = await AIService.getChatResponse(messageHistory, session.id);
 
     if (aiResponse.content) {
-      await this.sendMessage(from, aiResponse.content);
       const aiMessageData: DbChatMessage = {
         session_id: session.id,
         role: 'assistant',
         content: aiResponse.content,
         timestamp: new Date(),
-        metadata: aiResponse.metadata,
+        metadata: { ...aiResponse.metadata, status: 'draft' },
       };
       await Database.addChatMessage(aiMessageData);
     }
+  }
+
+  async sendDraftMessage(sessionId: string, to: string): Promise<void> {
+    const messages = await this.getMessageHistory(sessionId);
+    const draft = [...messages].reverse().find(
+      m => m.role === 'assistant' && m.metadata?.status === 'draft'
+    );
+
+    if (!draft) return;
+
+    await this.sendMessage(to, draft.content);
+    await Database.updateChatMessage(draft.id.toString(), {
+      session_id: sessionId,
+      role: 'assistant',
+      content: draft.content,
+      timestamp: new Date(draft.timestamp),
+      metadata: { ...draft.metadata, status: 'sent' },
+    });
   }
 }
 

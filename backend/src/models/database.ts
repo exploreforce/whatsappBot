@@ -240,11 +240,24 @@ export class Database {
       ...message,
       session_id: parseInt(message.session_id, 10) // Convert string to number for database
     };
-    
+
     const [created] = await db('chat_messages')
       .insert(messageToInsert)
       .returning('*');
     return created;
+  }
+
+  static async updateChatMessage(id: string, updates: Partial<DbChatMessage>): Promise<ChatMessage | null> {
+    const dbUpdates: any = {};
+    if (updates.content !== undefined) dbUpdates.content = updates.content;
+    if (updates.timestamp !== undefined) dbUpdates.timestamp = updates.timestamp;
+    if (updates.metadata !== undefined) dbUpdates.metadata = updates.metadata;
+
+    const [updated] = await db('chat_messages')
+      .where('id', parseInt(id, 10))
+      .update(dbUpdates)
+      .returning('*');
+    return updated || null;
   }
 
   static async updateChatSessionActivity(sessionId: string): Promise<void> {

@@ -130,7 +130,9 @@ export class AIService {
 
     const systemMessage: OpenAI.Chat.ChatCompletionMessageParam = {
       role: 'system',
-      content: botConfig.systemPrompt || 'You are a helpful AI assistant.',
+      content:
+        (botConfig.systemPrompt || 'You are a helpful AI assistant.') +
+        '\nAlways respond in the same language as the user\'s last message.',
     };
     
     const conversationHistory = messages.map(msg => ({

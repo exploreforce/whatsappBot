@@ -3,27 +3,29 @@
 import * as React from 'react';
 import { cn } from '@/utils';
 
-interface SwitchProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface SwitchProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onChange'> {
+  checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const Switch: React.FC<SwitchProps> = ({ className, ...props }) => {
-  const [enabled, setEnabled] = React.useState(props.checked || false);
+const Switch: React.FC<SwitchProps> = ({ className, checked, onCheckedChange, onChange, ...props }) => {
+  const [enabled, setEnabled] = React.useState(checked || false);
 
   const toggle = () => {
     const newState = !enabled;
     setEnabled(newState);
-    
-    if (props.onCheckedChange) {
-      props.onCheckedChange(newState);
+
+    if (onCheckedChange) {
+      onCheckedChange(newState);
     }
-    
-    if (props.onChange) {
+
+    if (onChange) {
       // Simulate event object for compatibility
       const event = {
         target: { checked: newState },
       } as React.ChangeEvent<HTMLInputElement>;
-      props.onChange(event);
+      onChange(event);
     }
   };
 

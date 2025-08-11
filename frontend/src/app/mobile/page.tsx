@@ -33,7 +33,7 @@ export default function MobileDashboard() {
           Configuration
         </Link>
         <Link
-          href="/calendar"
+          href="/calendar-new"
           className="block p-4 bg-white rounded-lg shadow text-center font-medium text-gray-900"
         >
           Calendar
@@ -49,7 +49,7 @@ export default function MobileDashboard() {
           <ChatBubbleLeftRightIcon className="h-6 w-6" />
           <span className="text-xs">Chat</span>
         </Link>
-        <Link href="/calendar" className="flex flex-col items-center text-gray-600">
+        <Link href="/calendar-new" className="flex flex-col items-center text-gray-600">
           <CalendarDaysIcon className="h-6 w-6" />
           <span className="text-xs">Calendar</span>
         </Link>

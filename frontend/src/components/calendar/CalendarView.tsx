@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { useApi } from '@/hooks/useApi';
-import { appointmentsApi } from '@/utils/api';
-import { Appointment } from '@/types';
+import { useApi, useFetch } from '@/hooks/useApi';
+import { appointmentsApi, botApi, servicesApi } from '@/utils/api';
+import { Appointment, Service } from '@/types';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
@@ -55,6 +55,8 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
   const { execute: updateAppointment, isLoading: isUpdating } = useApi();
   const { execute: deleteAppointment, isLoading: isDeleting } = useApi();
   
+  const [services, setServices] = useState<Service[]>([]);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [formData, setFormData] = useState({
     customerName: appointment?.customerName || '',
     customerPhone: appointment?.customerPhone || '',
@@ -64,40 +66,89 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
       selectedSlot ? moment(selectedSlot.start).format('YYYY-MM-DDTHH:mm') : '',
     duration: appointment?.duration || 60,
     notes: appointment?.notes || '',
-    appointmentType: appointment?.appointmentType || 'consultation'
+    serviceId: appointment?.appointmentType || ''
   });
+  
+  // Load bot config and services
+  const { data: botConfig } = useFetch(() => botApi.getConfig(), []);
+  
+  useEffect(() => {
+    if (botConfig?.id) {
+      servicesApi.getAll(botConfig.id).then(response => {
+        if (response.success && response.data) {
+          setServices(response.data);
+          // Set default service if available and form is empty
+          if (response.data.length > 0 && !formData.serviceId) {
+            const defaultService = response.data[0];
+            setSelectedService(defaultService);
+            setFormData(prev => ({ 
+              ...prev, 
+              duration: defaultService.durationMinutes || 60,
+              serviceId: defaultService.id 
+            }));
+          }
+        }
+      }).catch(console.error);
+    }
+  }, [botConfig?.id, formData.serviceId]);
 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const appointmentTypes = [
-    { value: 'consultation', label: 'Beratung' },
-    { value: 'checkup', label: 'Untersuchung' },
-    { value: 'followup', label: 'Nachkontrolle' },
-    { value: 'treatment', label: 'Behandlung' },
-    { value: 'emergency', label: 'Notfall' }
+  // Convert services to select options
+  const serviceOptions = services.map(service => ({
+    value: service.id,
+    label: `${service.name} (${service.durationMinutes}min)${service.price ? ` - ${new Intl.NumberFormat('de-DE', { style: 'currency', currency: service.currency || 'EUR' }).format(service.price)}` : ''}`
+  }));
+
+  // Fallback options if no services are configured
+  const fallbackOptions = [
+    { value: 'consultation', label: 'Beratung (60min)' },
+    { value: 'checkup', label: 'Untersuchung (30min)' },
+    { value: 'followup', label: 'Nachkontrolle (45min)' },
+    { value: 'treatment', label: 'Behandlung (90min)' }
   ];
+
+  const appointmentOptions = serviceOptions.length > 0 ? serviceOptions : fallbackOptions;
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // When service changes, update duration automatically
+    if (field === 'serviceId') {
+      const service = services.find(s => s.id === value);
+      if (service) {
+        setSelectedService(service);
+        setFormData(prev => ({ 
+          ...prev, 
+          [field]: value,
+          duration: service.durationMinutes || 60 
+        }));
+      }
+    }
   };
 
   const handleSave = async () => {
     try {
       setError(null);
       
+      // Prepare appointment data - only include fields expected by backend
+      const appointmentData = {
+        customerName: formData.customerName,
+        customerPhone: formData.customerPhone,
+        customerEmail: formData.customerEmail,
+        datetime: formData.datetime, // NO TIMEZONE CONVERSION - use local datetime as-is
+        duration: formData.duration,
+        notes: formData.notes,
+        appointmentType: formData.serviceId || 'general' // Use serviceId as appointmentType
+      };
+      
       if (appointment) {
         // Update existing appointment
-        await updateAppointment(() => appointmentsApi.update(appointment.id, {
-          ...formData,
-          datetime: new Date(formData.datetime).toISOString()
-        }));
+        await updateAppointment(() => appointmentsApi.update(appointment.id, appointmentData));
       } else {
         // Create new appointment
-        await createAppointment(() => appointmentsApi.create({
-          ...formData,
-          datetime: new Date(formData.datetime).toISOString()
-        }));
+        await createAppointment(() => appointmentsApi.create(appointmentData));
       }
       
       setSaveSuccess(true);
@@ -206,10 +257,10 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
             />
 
             <Select
-              label="Terminart"
-              value={formData.appointmentType}
-              onChange={(e) => handleInputChange('appointmentType', e.target.value)}
-              options={appointmentTypes}
+              label="Service"
+              value={formData.serviceId}
+              onChange={(e) => handleInputChange('serviceId', e.target.value)}
+              options={appointmentOptions}
             />
           </div>
 

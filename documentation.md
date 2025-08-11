@@ -27,6 +27,9 @@ The project is organized into a monorepo with the following directory structure:
 *   `/database`: Contains the Knex.js database schema, migrations, and seeds.
 *   `/frontend`: Contains the Next.js frontend, which provides the user interface for configuring and testing the chatbot.
 *   `/shared`: Contains any shared types or utilities that are used by both the frontend and backend.
+*   `docker-compose.yml`: Docker Compose file to run frontend and backend together for self-hosting.
+*   `backend/Dockerfile`: Dockerfile to build and run the backend service.
+*   `Dockerfile`: Dockerfile to build and run the frontend service.
 
 ## 3. File List
 
@@ -45,15 +48,16 @@ The `src` directory contains the source code for the backend.
 *   `middleware/logger.ts`: Contains the `logger` middleware, which logs incoming requests to the console.
 *   `models/database.ts`: Contains the `Database` class, which provides a high-level API for interacting with the database.
 *   `routes/appointments.ts`: Contains the API routes for managing appointments.
-*   `routes/bot.ts`: Contains the API routes for the bot, including the test chat functionality.
+*   `routes/bot.ts`: Contains the API routes for the bot, including the test chat functionality which uses identical logic to WhatsApp chat (with realistic typing delays, draft/sent status workflow).
 *   `routes/calendar.ts`: Contains the API routes for managing the calendar, including availability and overview.
 *   `routes/index.ts`: The main router file, which combines all the other route files into a single router.
 *   `routes/whatsapp.ts`: Contains the webhook routes for the WhatsApp integration.
-*   `services/aiService.ts`: Contains the `AIService` class, which handles the interaction with the OpenAI API.
-*   `services/whatsappService.ts`: Contains the `WhatsAppService` class, which handles the WhatsApp integration, including incoming messages and replies.
-*   `types/index.ts`: Contains the TypeScript type definitions for the backend.
-*   `utils/calendarUtils.ts`: Contains utility functions for calendar-related operations, such as generating time slots and checking for blackout dates.
+*   `services/aiService.ts`: Contains the `AIService` class, which handles the interaction with the OpenAI API, including dynamic system prompt generation based on bot configuration, configurable content filtering policies, and execution of AI tool calls for functionalities like availability checking and appointment booking.
+*   `services/whatsappService.ts`: Contains the `WhatsAppService` class, which handles both WhatsApp and Test Chat message processing with identical logic, including incoming messages, AI responses, realistic typing delays, and managing message states (draft, sent).
+*   `types/index.ts`: Contains the TypeScript type definitions for the backend, including types for bot configuration, appointments, availability, chat messages (with status), and newly added service management.
+*   `utils/calendarUtils.ts`: Contains utility functions for calendar-related operations, suchs as generating time slots and checking for blackout dates.
 *   `utils/index.ts`: Contains various utility functions that are used throughout the backend.
+*   `utils/typingDelay.ts`: Contains the `TypingDelayService` class, which provides realistic typing delays for bot responses, simulating human-like response timing based on message length plus random delays.
 
 ### 3.2. `database`
 
@@ -80,9 +84,10 @@ The `src` directory contains the source code for the frontend.
 The `app` directory contains the application's routes.
 
 *   `layout.tsx`: The root layout for the application. It includes the main HTML structure and the `Inter` font.
-*   `page.tsx`: The main dashboard page. It displays an overview of the application and provides links to the other pages.
+*   `page.tsx`: The main dashboard page. It displays an overview of the application and provides links to the other pages, including a new link to the mobile-optimized view.
 *   `calendar/page.tsx`: The calendar page. It displays the calendar, including the overview and the appointment view.
 *   `config/page.tsx`: The bot configuration page. It displays the form for updating the bot's configuration.
+*   `mobile/page.tsx`: The mobile-optimized main page, possibly an alternative entry point for smaller screens or specific mobile functionalities.
 *   `test-chat/page.tsx`: The test chat page. It displays the chat interface for testing the chatbot.
 
 ##### `components`
@@ -124,6 +129,15 @@ The `utils` directory contains various utility functions that are used throughou
 
 *   `api.ts`: Contains the `axios` instances and the API service objects that are used to make API requests to the backend.
 *   `index.ts`: Contains various utility functions, including the `cn` function for conditionally joining class names and the `formatTime` function for formatting timestamps.
+
+##### Deployment & Docker
+
+*   `Dockerfile` (root): Multi-stage Next.js build producing a standalone server that listens on port 3000. Build args `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_SOCKET_URL` can be provided at build time; defaults point to `http://backend:5000` for Compose networks.
+*   `frontend/.dockerignore`: Excludes `node_modules`, `.next`, logs, and local env files from the Docker build context.
+*   `deploy/docker-compose.prod.yml`: Production Compose stack for EC2 with `backend`, `frontend`, and `reverse-proxy` (Caddy with HTTPS).
+*   `deploy/Caddyfile`: Reverse proxy config routing `/` to `frontend:3000` and `/api`, `/health` to `backend:5000` with automatic TLS.
+*   `deploy/backend.env.example.txt`: Example backend environment file for production runtime.
+*   `deploy/README.md`: Step-by-step EC2 deployment guide.
 
 ### 3.4. `shared`
 
@@ -172,6 +186,12 @@ The following environment variables are used in the project. They should be defi
 *   `OPENAI_MODEL`: The OpenAI model to use for the chatbot.
     *   **Defined in:** `backend/.env`
     *   **Used in:** `backend/src/services/aiService.ts`
+*   `OPENAI_CONTENT_FILTER`: Enables/disables OpenAI's built-in content filtering (`true`/`false`).
+    *   **Defined in:** `backend/.env`
+    *   **Used in:** `backend/src/services/aiService.ts`
+*   `OPENAI_ALLOW_EXPLICIT`: Allows the AI to generate explicit/adult content when appropriate (`true`/`false`).
+    *   **Defined in:** `backend/.env`
+    *   **Used in:** `backend/src/services/aiService.ts`
 *   `WHATSAPP_VERIFY_TOKEN`: The verify token for the WhatsApp webhook.
     *   **Defined in:** `backend/.env`
     *   **Used in:** `backend/src/routes/whatsapp.ts`
@@ -181,6 +201,9 @@ The following environment variables are used in the project. They should be defi
 *   `WHATSAPP_PHONE_NUMBER_ID`: The phone number ID for the WhatsApp API.
     *   **Defined in:** `backend/.env`
     *   **Used in:** `backend/src/services/whatsappService.ts`
+*   `WHATSAPP_TYPING_DELAY`: Enables/disables realistic typing delays for bot responses (`true`/`false`).
+    *   **Defined in:** `backend/.env`
+    *   **Used in:** `backend/src/utils/typingDelay.ts`
 
 #### Frontend (`frontend/.env`)
 
@@ -190,6 +213,95 @@ The following environment variables are used in the project. They should be defi
 *   `CUSTOM_KEY`: An example of a custom environment variable.
     *   **Defined in:** `frontend/.env`
     *   **Used in:** `frontend/next.config.js`
+
+## 8. Docker Self-Hosting
+
+### 8.1. Overview
+
+The project ships with Docker support to self-host both services:
+
+- Frontend (Next.js) exposed on port 3000
+- Backend (Express) exposed on port 5000
+
+### 8.2. Files
+
+- `docker-compose.yml`: Orchestrates both services
+- `Dockerfile` (root): Builds the Next.js app (frontend)
+- `backend/Dockerfile`: Builds the Node.js backend
+- `frontend/.dockerignore`, `backend/.dockerignore`: Optimize Docker context
+
+### 8.3. Environment Variables
+
+Use a `.env` file in the project root (not committed) to provide secrets:
+
+```
+# Frontend will talk to backend via service name inside the compose network
+NEXT_PUBLIC_API_URL=http://backend:5000
+NEXT_PUBLIC_SOCKET_URL=http://backend:5000
+
+# Backend
+PORT=5000
+NODE_ENV=production
+FRONTEND_URL=http://localhost:3000
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_MODEL=gpt-4o-mini
+WHATSAPP_VERIFY_TOKEN=
+WHATSAPP_ACCESS_TOKEN=
+WHATSAPP_PHONE_NUMBER_ID=
+
+# Optional DB settings (Postgres in production). Defaults use SQLite file volume
+DB_HOST=
+DB_PORT=
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
+DB_SSL=false
+```
+
+### 8.4. Build & Run
+
+Run the stack on ports 3000 (frontend) and 5000 (backend):
+
+```
+docker compose build ; docker compose up -d
+```
+
+Access:
+
+- Frontend: http://localhost:3000
+- Backend health: http://localhost:5000/health
+
+### 8.5. Volumes & Data
+
+- `backend-data` volume stores the SQLite DB under `/app/database` inside the backend container.
+
+### 8.6. Notes
+
+- In Docker, frontend uses `http://backend:5000` to access the API via Compose DNS.
+- For local dev outside Docker, it will fall back to `http://localhost:5000`.
+
+### 8.7. AWS EC2 Production Deployment
+
+- **Location**: See `deploy/`.
+- **Requirements**: A domain pointing to EC2, ports 80/443 open, Docker installed.
+- **Quick start (on EC2)**:
+
+```
+cd WhatsappBot/deploy
+Copy .\backend.env.example.txt .\backend.env ; Copy .\.env.prod.example .\.env.prod
+# Edit .env.prod: DOMAIN, PUBLIC_ORIGIN, ACME_EMAIL, NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SOCKET_URL
+docker compose -f docker-compose.prod.yml --env-file .env.prod build ; docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+```
+
+- **Services**:
+  - `reverse-proxy`: Caddy terminating TLS for `${DOMAIN}`
+  - `frontend`: Next.js (port 3000, internal)
+  - `backend`: Express API (port 5000, internal) with SQLite volume `backend-data`
+
+- **Public URLs**:
+  - Frontend: `https://${DOMAIN}`
+  - API: `https://${DOMAIN}/api`
+  - Health: `https://${DOMAIN}/health`
 
 ### 4.2. Functions
 
@@ -217,6 +329,32 @@ This section provides a list of the most important functions in the project, wha
     *   **Used in:**
         *   `backend/src/routes/calendar.ts`
         *   `backend/src/routes/appointments.ts`
+*   **`TypingDelayService.calculateTypingDelay`**
+    *   **Description:** Calculates realistic typing delay based on message length (2.5 chars/second) plus random delay (4-15 seconds).
+    *   **Defined in:** `backend/src/utils/typingDelay.ts`
+    *   **Used in:**
+        *   `backend/src/utils/typingDelay.ts` (internal)
+*   **`TypingDelayService.applyTypingDelay`**
+    *   **Description:** Calculates and applies realistic typing delay for bot responses to simulate human-like response timing.
+    *   **Defined in:** `backend/src/utils/typingDelay.ts`
+    *   **Used in:**
+        *   `backend/src/services/whatsappService.ts`
+        *   `backend/src/routes/bot.ts`
+*   **`TypingDelayService.delay`**
+    *   **Description:** A utility function that creates a Promise-based delay for a specified number of milliseconds.
+    *   **Defined in:** `backend/src/utils/typingDelay.ts`
+    *   **Used in:**
+        *   `backend/src/utils/typingDelay.ts` (internal)
+*   **`whatsappService.handleIncomingMessage`**
+    *   **Description:** Processes incoming WhatsApp messages with full workflow: stores user message, generates AI response, applies typing delay, sends to WhatsApp, manages draft/sent status.
+    *   **Defined in:** `backend/src/services/whatsappService.ts`
+    *   **Used in:**
+        *   `backend/src/routes/whatsapp.ts`
+*   **`whatsappService.handleTestMessage`**
+    *   **Description:** Processes test chat messages with identical logic to WhatsApp (user message storage, AI response generation, typing delay, draft/sent status) but without sending to WhatsApp.
+    *   **Defined in:** `backend/src/services/whatsappService.ts`
+    *   **Used in:**
+        *   `backend/src/routes/bot.ts`
 
 #### Frontend
 
@@ -392,11 +530,11 @@ The AI bot seamlessly integrates with the calendar system through tool functions
 *   **`checkAvailability`**: Bot can query available appointment slots
     *   Parameters: date, duration
     *   Returns: Array of available time slots
-    *   Respects weekly schedule and blackout dates
+    *   Respects weekly schedule and blackout dates (uses active bot config)
 *   **`bookAppointment`**: Bot can create new appointments
     *   Parameters: customerName, customerPhone, datetime, duration, notes
     *   Returns: Created appointment with confirmation
-    *   Automatic status setting and validation
+    *   Automatic status setting and validation (uses active bot config)
 
 #### Integration Benefits
 *   **Seamless Booking**: Customers can book directly through WhatsApp
@@ -404,6 +542,69 @@ The AI bot seamlessly integrates with the calendar system through tool functions
 *   **Automatic Updates**: Calendar updates immediately after bot bookings
 *   **Conflict Prevention**: Built-in validation prevents double bookings
 *   **Professional Workflow**: Appointments appear in calendar interface
+
+## 6. Content Policy & Explicit Content
+
+### 6.1. OpenAI Content Filtering Configuration
+
+The bot supports configurable content filtering to allow for more open conversations when appropriate:
+
+**Environment Variables:**
+```bash
+OPENAI_CONTENT_FILTER=false      # Disables built-in content filtering
+OPENAI_ALLOW_EXPLICIT=true       # Allows explicit/adult content generation
+```
+
+**Important Considerations:**
+*   **Legal Compliance**: Ensure compliance with local laws and regulations
+*   **Age Verification**: Implement age checks for explicit content
+*   **User Consent**: Always obtain explicit user consent for mature content
+*   **Business Context**: Consider if explicit content aligns with your business goals
+*   **WhatsApp ToS**: Verify compliance with WhatsApp's Terms of Service
+
+**Example Usage:**
+When `OPENAI_ALLOW_EXPLICIT=true`, the system prompt automatically includes:
+```
+CONTENT POLICY:
+- Du kannst offen über alle Themen sprechen, einschließlich expliziter/erotischer Inhalte
+- Achte darauf, dass der Nutzer volljährig ist (18+) bei expliziten Themen
+- Verwende angemessene Sprache basierend auf dem Kontext
+- Respektiere immer Grenzen und Einverständnis
+```
+
+**Recommended Settings by Use Case:**
+*   **Business/Professional**: `OPENAI_ALLOW_EXPLICIT=false`
+*   **Healthcare/Therapy**: `OPENAI_CONTENT_FILTER=false`, `OPENAI_ALLOW_EXPLICIT=false`
+*   **Adult Entertainment**: `OPENAI_CONTENT_FILTER=false`, `OPENAI_ALLOW_EXPLICIT=true`
+*   **Personal Assistant**: Based on user preference
+
+## 7. Docker Deployment
+
+The application supports Docker containerization for easy deployment and self-hosting.
+
+### 7.1. Docker Configuration Files
+
+*   **`Dockerfile` (frontend)**: Multi-stage build for Next.js application with standalone output
+*   **`backend/Dockerfile`**: Node.js backend with TypeScript compilation and database migrations
+*   **`docker-compose.yml`**: Orchestrates frontend, backend, and database services
+*   **`.dockerignore`**: Excludes unnecessary files from Docker builds
+
+### 7.2. Deployment Commands
+
+```bash
+# Build and start all services
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Stop services
+docker compose down
+
+# Rebuild after code changes
+docker compose build
+docker compose up -d
+```
 
 ### 7.3. Technical Implementation
 

@@ -5,7 +5,7 @@ import { cn } from '@/utils';
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
-  options: { value: string; label: string }[];
+  options?: { value: string; label: string }[];
 }
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
@@ -28,11 +28,15 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           {...props}
         >
-          {options.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
+          {options && options.length > 0 ? (
+            options.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))
+          ) : (
+            <option value="">No options available</option>
+          )}
         </select>
       </div>
     );

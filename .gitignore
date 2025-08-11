@@ -1,3 +1,40 @@
+# Node modules
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Build outputs
+dist/
+backend/dist/
+frontend/.next/
+frontend/.turbo/
+frontend/out/
+
+# Env files (keep examples)
+.env
+.env.*
+!frontend/env.example.txt
+!backend/env.example.txt
+!deploy/backend.env.example.txt
+
+# Local runtime/config
+deploy/backend.env
+deploy/.env*
+
+# Databases & local data
+backend/database/*.sqlite*
+backend/database/*.db
+backend/database/whatsapp_bot_dev.sqlite3
+backend/database/whatsapp_bot.db
+
+# Logs
+*.log
+logs/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
 # Dependencies
 node_modules/
 npm-debug.log*

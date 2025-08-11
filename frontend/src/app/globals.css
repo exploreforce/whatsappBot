@@ -26,6 +26,149 @@ body {
     rgb(var(--background-start-rgb));
 }
 
+/* React Big Calendar Fixes */
+.rbc-calendar {
+  color: #374151 !important; /* Dunkle Textfarbe für den gesamten Kalender */
+}
+
+.rbc-toolbar {
+  color: #111827 !important; /* Dunkle Farbe für Toolbar */
+}
+
+.rbc-toolbar button {
+  color: #374151 !important; /* Dunkle Farbe für Toolbar Buttons */
+}
+
+.rbc-header {
+  color: #111827 !important; /* Dunkle Farbe für Header (Wochentage) */
+  font-weight: 600;
+}
+
+.rbc-date-cell {
+  color: #374151 !important; /* Dunkle Farbe für Datum in Zellen */
+}
+
+.rbc-day-bg:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.rbc-today {
+  background-color: #dbeafe !important;
+}
+
+.rbc-off-range-bg {
+  background-color: #f9fafb !important;
+}
+
+.rbc-time-column .rbc-timeslot-group {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.rbc-time-gutter .rbc-time-slot {
+  color: #6b7280 !important; /* Dunkle Farbe für Uhrzeiten in der Sidebar */
+  font-size: 12px;
+}
+
+.rbc-time-header-gutter {
+  background-color: #f9fafb;
+}
+
+.rbc-time-content {
+  border-left: 1px solid #e5e7eb;
+}
+
+.rbc-current-time-indicator {
+  background-color: #ef4444 !important;
+  height: 2px;
+}
+
+.rbc-time-header .rbc-header {
+  border-bottom: 1px solid #e5e7eb;
+  color: #111827 !important; /* Dunkle Farbe für Tages-Header */
+  font-weight: 600;
+}
+
+.rbc-month-view .rbc-date-cell {
+  font-weight: 500;
+  color: #374151 !important; /* Dunkle Farbe für Monatsdaten */
+}
+
+.rbc-month-view .rbc-date-cell > a {
+  color: #374151 !important; /* Dunkle Farbe für verlinkte Daten */
+}
+
+.rbc-month-view .rbc-off-range {
+  color: #9ca3af !important; /* Hellere Farbe für Daten außerhalb des Monats */
+}
+
+.rbc-agenda-view .rbc-agenda-date-cell,
+.rbc-agenda-view .rbc-agenda-time-cell {
+  color: #374151 !important; /* Dunkle Farbe für Agenda-Ansicht */
+}
+
+.rbc-agenda-view .rbc-agenda-event-cell {
+  color: #111827 !important;
+}
+
+/* Stelle sicher, dass alle Textelemente im Kalender sichtbar sind */
+.rbc-calendar * {
+  color: inherit;
+}
+
+.rbc-label {
+  color: #6b7280 !important;
+}
+
+/* Weitere wichtige Kalender-Fixes */
+.rbc-show-more {
+  color: #2563eb !important; /* Blau für "Mehr anzeigen" Links */
+  font-weight: 500;
+}
+
+.rbc-event {
+  font-size: 12px !important;
+}
+
+.rbc-event-label {
+  color: white !important;
+}
+
+.rbc-selected {
+  background-color: #3b82f6 !important;
+}
+
+.rbc-today .rbc-date-cell {
+  color: #1d4ed8 !important; /* Blau für heute's Datum */
+  font-weight: 700;
+}
+
+.rbc-slot-selection {
+  background-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Navigation Buttons */
+.rbc-btn-group button {
+  background-color: #f3f4f6 !important;
+  border: 1px solid #d1d5db !important;
+  color: #374151 !important;
+}
+
+.rbc-btn-group button:hover {
+  background-color: #e5e7eb !important;
+}
+
+.rbc-btn-group button.rbc-active {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}
+
+/* Toolbar styling */
+.rbc-toolbar span {
+  color: #111827 !important;
+  font-weight: 600;
+  font-size: 18px;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -42,6 +185,573 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
+}
+
+/* DayPilot Lite Mobile Optimizations */
+.daypilot-calendar-container {
+  /* Ensure proper mobile rendering */
+  width: 100% !important;
+  overflow-x: auto;
+}
+
+/* DayPilot Month View Mobile */
+.daypilot_month_main {
+  font-size: 14px !important;
+}
+
+.daypilot_month_dayheader {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  background-color: #f9fafb !important;
+}
+
+.daypilot_month_cell {
+  border-color: #e5e7eb !important;
+}
+
+.daypilot_month_cell_business {
+  background-color: #ffffff !important;
+}
+
+.daypilot_month_cell_other {
+  background-color: #f9fafb !important;
+}
+
+/* DayPilot Events Mobile */
+.daypilot_event_inner {
+  font-size: 12px !important;
+  padding: 2px 4px !important;
+  border-radius: 4px !important;
+  color: white !important;
+  font-weight: 500 !important;
+}
+
+/* Touch-friendly event sizing */
+@media (max-width: 640px) {
+  .daypilot_event_inner {
+    font-size: 10px !important;
+    padding: 1px 2px !important;
+  }
+  
+  .daypilot_month_main {
+    font-size: 12px !important;
+  }
+  
+  .daypilot_month_dayheader {
+    font-size: 10px !important;
+    padding: 4px 2px !important;
+  }
+  
+  .daypilot_month_cell {
+    min-height: 60px !important;
+  }
+}
+
+/* DayPilot Week/Day View Mobile */
+.daypilot_scheduler_main {
+  font-size: 12px !important;
+}
+
+.daypilot_scheduler_timeheader {
+  font-size: 11px !important;
+  color: #6b7280 !important;
+}
+
+.daypilot_scheduler_cell {
+  border-color: #e5e7eb !important;
+}
+
+.daypilot_scheduler_cell_business {
+  background-color: #ffffff !important;
+}
+
+/* Mobile-responsive navigation buttons */
+@media (max-width: 640px) {
+  .daypilot-calendar-container {
+    overflow-x: scroll;
+  }
+}
+
+/* DayPilot Context Menu Mobile */
+.daypilot_menu {
+  font-size: 14px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.daypilot_menu_item {
+  padding: 12px 16px !important;
+  color: #374151 !important;
+}
+
+.daypilot_menu_item:hover {
+  background-color: #f3f4f6 !important;
+}
+
+/* 🔥 COMPREHENSIVE DAYPILOT VISIBILITY FIXES */
+
+/* Core DayPilot Calendar Elements */
+.daypilot_calendar_main,
+.daypilot_calendar,
+.daypilot_month_main,
+.daypilot_month {
+  color: #1f2937 !important;
+  background-color: #ffffff !important;
+}
+
+/* Calendar Headers */
+.daypilot_calendar_header,
+.daypilot_calendar_header_cell,
+.daypilot_month_header,
+.daypilot_month_dayheader,
+.daypilot_month_dayheader_inner {
+  color: #1f2937 !important;
+  background-color: #f9fafb !important;
+  font-weight: 600 !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Time Headers & Labels */
+.daypilot_calendar_hourheader,
+.daypilot_calendar_timeheader,
+.daypilot_calendar_timeheader_cell {
+  color: #4b5563 !important;
+  background-color: #f9fafb !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Calendar Cells */
+.daypilot_calendar_cell,
+.daypilot_month_cell,
+.daypilot_month_cell_inner {
+  color: #1f2937 !important;
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+/* All-day Events Area */
+.daypilot_calendar_alldayheader {
+  color: #1f2937 !important;
+  background-color: #f9fafb !important;
+}
+
+/* Week View Specific */
+.daypilot_calendar_week_main {
+  color: #1f2937 !important;
+}
+
+/* Month View Day Numbers */
+.daypilot_month_day {
+  color: #1f2937 !important;
+  font-weight: 500 !important;
+}
+
+/* Navigation Elements */
+.daypilot_calendar_corner,
+.daypilot_month_corner {
+  background-color: #f9fafb !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Enhanced Appointment Event Styling */
+.appointment-event {
+  padding: 2px 4px;
+  font-size: 11px;
+  line-height: 1.2;
+  height: 100%;
+  overflow: hidden;
+}
+
+.appointment-title {
+  font-weight: 600;
+  margin-bottom: 1px;
+  color: #ffffff !important;
+}
+
+.appointment-service {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 10px;
+  margin-bottom: 1px;
+}
+
+.appointment-time {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 9px;
+}
+
+/* DayPilot Navigator Enhancements */
+.daypilot_navigator_main {
+  font-size: 12px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.daypilot_navigator_dayheader {
+  font-weight: 600 !important;
+  color: #374151 !important;
+  background-color: #f9fafb !important;
+  font-size: 11px !important;
+}
+
+.daypilot_navigator_day {
+  border-color: #e5e7eb !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.daypilot_navigator_day:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.daypilot_navigator_selected {
+  background-color: #3b82f6 !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+.daypilot_navigator_today {
+  background-color: #dbeafe !important;
+  color: #1d4ed8 !important;
+  font-weight: 600 !important;
+}
+
+/* DayPilot Modal Enhancements */
+.daypilot_modal_inner {
+  border-radius: 12px !important;
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.daypilot_modal_top {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 20px !important;
+}
+
+.daypilot_modal_content {
+  padding: 24px !important;
+}
+
+/* Enhanced Event Areas */
+.daypilot_event_inner {
+  border-radius: 6px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.2s ease !important;
+}
+
+.daypilot_event_inner:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Scheduler View Enhancements */
+.daypilot_scheduler_main {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+}
+
+.daypilot_scheduler_rowheader {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+  border-color: #e5e7eb !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+}
+
+.daypilot_scheduler_cell_business {
+  background-color: #ffffff !important;
+}
+
+.daypilot_scheduler_cell:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Mobile Enhancements */
+@media (max-width: 768px) {
+  .appointment-event {
+    font-size: 9px;
+    padding: 1px 2px;
+  }
+  
+  .appointment-title {
+    font-size: 9px;
+  }
+  
+  .appointment-service,
+  .appointment-time {
+    display: none; /* Hide details on mobile */
+  }
+  
+  .daypilot_navigator_main {
+    font-size: 10px !important;
+  }
+  
+  .daypilot_modal_inner {
+    margin: 10px !important;
+    border-radius: 8px !important;
+  }
+}
+
+/* 🚀 ADDITIONAL DAYPILOT ELEMENTS VISIBILITY */
+
+/* Scheduler View Elements */
+.daypilot_scheduler_main,
+.daypilot_scheduler {
+  color: #1f2937 !important;
+  background-color: #ffffff !important;
+}
+
+.daypilot_scheduler_rowheader,
+.daypilot_scheduler_rowheader_inner {
+  color: #1f2937 !important;
+  background-color: #f9fafb !important;
+  font-weight: 600 !important;
+  border-color: #e5e7eb !important;
+}
+
+.daypilot_scheduler_cell {
+  color: #1f2937 !important;
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+.daypilot_scheduler_timeheader {
+  color: #4b5563 !important;
+  background-color: #f9fafb !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Events in all views */
+.daypilot_event,
+.daypilot_event_inner {
+  color: #ffffff !important;
+  border-radius: 4px !important;
+}
+
+/* Ensure all text elements are visible */
+.daypilot_calendar div,
+.daypilot_month div,
+.daypilot_scheduler div,
+.daypilot_navigator div {
+  color: inherit !important;
+}
+
+/* Force visibility on problematic elements */
+.daypilot_calendar *,
+.daypilot_month *,
+.daypilot_scheduler *,
+.daypilot_navigator * {
+  color: inherit !important;
+}
+
+/* Calendar Controls and Buttons */
+.daypilot-calendar-container button,
+.daypilot-calendar-container .btn {
+  color: #1f2937 !important;
+  background-color: #ffffff !important;
+  border-color: #d1d5db !important;
+}
+
+/* Override any white text */
+.daypilot_calendar [style*="color: white"],
+.daypilot_month [style*="color: white"],
+.daypilot_scheduler [style*="color: white"] {
+  color: #1f2937 !important;
+}
+
+/* Loading states */
+.daypilot-calendar-container .animate-spin {
+  border-color: #3b82f6 !important;
+  border-top-color: transparent !important;
+}
+
+/* Time Grid Lines */
+.daypilot_calendar_cell_business {
+  background-color: #ffffff !important;
+}
+
+.daypilot_calendar_cell_non_business {
+  background-color: #f9fafb !important;
+}
+
+/* Today highlighting */
+.daypilot_calendar_cell_today,
+.daypilot_month_cell_today {
+  background-color: #fef3c7 !important;
+}
+
+/* Selected cells */
+.daypilot_calendar_cell_selected,
+.daypilot_month_cell_selected {
+  background-color: #dbeafe !important;
+}
+
+/* 🎨 ENHANCED EVENT ANIMATIONS & EFFECTS */
+
+/* Shine animation for premium events */
+@keyframes shine {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  50% { transform: translateX(0%) translateY(0%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+/* Emergency pulse animation */
+@keyframes emergency-pulse {
+  0% { 
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    transform: scale(1.02);
+  }
+  100% { 
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    transform: scale(1);
+  }
+}
+
+/* Hover effects for events */
+@keyframes event-hover {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-2px) scale(1.02); }
+}
+
+/* Event Classes */
+.event-emergency-pulse {
+  animation: emergency-pulse 2s infinite !important;
+}
+
+.appointment-event-pro {
+  transition: all 0.3s ease !important;
+  cursor: pointer !important;
+}
+
+.appointment-event-pro:hover {
+  animation: event-hover 0.3s ease forwards !important;
+  z-index: 10 !important;
+}
+
+/* Priority-based event enhancements */
+.event-priority-long {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+  border-width: 3px !important;
+}
+
+.event-priority-medium {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+  border-width: 2px !important;
+}
+
+.event-priority-short {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  border-width: 1px !important;
+}
+
+/* Status-based Event Colors (Legacy - kept for compatibility) */
+.event-confirmed {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border-color: #059669 !important;
+}
+
+.event-pending {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  border-color: #d97706 !important;
+}
+
+.event-cancelled {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  border-color: #dc2626 !important;
+}
+
+.event-completed {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important;
+  border-color: #4b5563 !important;
+}
+
+/* Service-specific styling */
+.service-consultation {
+  border-left: 4px solid #3b82f6 !important;
+}
+
+.service-emergency {
+  border-left: 4px solid #ef4444 !important;
+  animation: emergency-pulse 2s infinite !important;
+}
+
+.service-checkup {
+  border-left: 4px solid #10b981 !important;
+}
+
+.service-therapy {
+  border-left: 4px solid #8b5cf6 !important;
+}
+
+/* Mobile optimizations for events */
+@media (max-width: 768px) {
+  .appointment-event-pro {
+    font-size: 10px !important;
+    padding: 4px !important;
+  }
+  
+  .appointment-event-pro:hover {
+    animation: none !important;
+    transform: none !important;
+  }
+  
+  .event-emergency-pulse {
+    animation-duration: 3s !important;
+  }
+}
+
+/* Dark mode support for events */
+@media (prefers-color-scheme: dark) {
+  .appointment-event-pro {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  }
+}
+
+/* === DayPilot Modal Fixes === */
+.modal_default_inner {
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+.modal_default_content {
+  color: #1f2937 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 14px !important;
+  padding: 20px !important;
+  text-align: center !important;
+}
+
+.modal_default_buttons {
+  background: #f9fafb !important;
+  border-top: 1px solid #e5e7eb !important;
+  padding: 10px 20px !important;
+  text-align: center !important;
+}
+
+.modal_default_ok {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  transition: background-color 0.2s !important;
+}
+
+.modal_default_ok:hover {
+  background: #2563eb !important;
+}
+
+.modal_default_ok:focus {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 2px !important;
 }
 
 /* Chat message animations */

@@ -11,11 +11,16 @@ router.get(
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { botConfigId } = req.params;
     
+    console.log(`🔍 Services API: Getting services for botConfigId: ${botConfigId}`);
+    
     const services = await Database.getServices(botConfigId);
     
+    console.log(`🔍 Services API: Found ${services?.length || 0} services:`, services);
+    
     res.json({
+      success: true,
       message: 'Services retrieved successfully',
-      data: services,
+      data: services || [],
     });
   })
 );
@@ -45,6 +50,7 @@ router.post(
     const newService = await Database.createService(botConfigId, serviceData);
     
     res.status(201).json({
+      success: true,
       message: 'Service created successfully',
       data: newService,
     });
@@ -69,6 +75,7 @@ router.put(
     const updatedService = await Database.updateService(serviceId, updates);
     
     res.json({
+      success: true,
       message: 'Service updated successfully',
       data: updatedService,
     });
@@ -84,6 +91,7 @@ router.delete(
     await Database.deleteService(serviceId);
     
     res.json({
+      success: true,
       message: 'Service deleted successfully',
       data: { serviceId },
     });

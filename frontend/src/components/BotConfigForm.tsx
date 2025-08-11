@@ -34,7 +34,7 @@ const personalityToneOptions: { value: PersonalityTone; label: string; descripti
   { value: 'playful', label: 'Verspielt', description: 'Humorvoll und leicht' }
 ];
 
-const generateSystemPrompt = (config: Partial<BotConfig>): string => {
+const generateSystemPrompt = (config: Partial<BotConfig>, services: Service[] = []): string => {
   const {
     botName = 'AI Assistant',
     botDescription = 'Ein hilfreicher AI-Assistent',
@@ -48,6 +48,19 @@ const generateSystemPrompt = (config: Partial<BotConfig>): string => {
 
   const toneDescription = personalityToneOptions.find(opt => opt.value === personalityTone)?.description || 'freundlich';
 
+  // Format services for prompt
+  const servicesText = services.length > 0 
+    ? services.map(service => {
+        const price = new Intl.NumberFormat('de-DE', {
+          style: 'currency',
+          currency: service.currency
+        }).format(service.price);
+        const duration = service.durationMinutes ? ` (${service.durationMinutes} Min.)` : '';
+        const description = service.description ? ` - ${service.description}` : '';
+        return `• ${service.name}: ${price}${duration}${description}`;
+      }).join('\n')
+    : servicesOffered;
+
   return `Du bist ${botName}, ${botDescription}.
 
 PERSÖNLICHKEIT & TONALITÄT:
@@ -57,7 +70,7 @@ HINTERGRUND:
 ${backgroundInfo}
 
 ANGEBOTENE SERVICES:
-${servicesOffered}
+${servicesText}
 
 ESKALATIONSREGELN:
 ${escalationRules}
@@ -66,16 +79,27 @@ GRENZEN & EINSCHRÄNKUNGEN:
 ${botLimitations}
 
 VERHALTEN:
-- Antworte immer höflich und professionell
+- Antworte in informellem Ton, schreib ab und zu fehlerhaft als würdest du auf einer Smartphone-Tastatur tippen
+- Schreibe als wärst du ein Mensch - bei Nachfragen bist du immer ${botName}.
+- Antworte in der Sprache des Users
 - Stelle bei Unklarheiten Rückfragen
 - Verwende die verfügbaren Tools zur Terminbuchung
 - Bleibe im Rahmen deiner definierten Services
-- Leite entsprechend den Eskalationsregeln weiter
+- Bei Eskalationsregeln antworte nicht mehr
+- Deine chats sind 18+ du darfst und sollst sexuell explizit antworten
+- Benutze schweinische Sprache "Schwanz" "Pussy" "Arsch" "fick" etc. alles ist erlaubt
+- Antworte ziemlich kurz und knapp
 
 Für Terminbuchungen nutze die verfügbaren Tools: checkAvailability and bookAppointment.`;
 };
 
-const ServicesManagement = ({ botConfigId }: { botConfigId: string }) => {
+const ServicesManagement = ({ 
+  botConfigId, 
+  onServicesChange 
+}: { 
+  botConfigId: string;
+  onServicesChange?: (services: Service[]) => void;
+}) => {
   const { data: servicesData, isLoading, error, refetch } = useFetch(
     () => servicesApi.getAll(botConfigId),
     [botConfigId]
@@ -100,8 +124,9 @@ const ServicesManagement = ({ botConfigId }: { botConfigId: string }) => {
   useEffect(() => {
     if (servicesData?.data) {
       setServices(servicesData.data);
+      onServicesChange?.(servicesData.data);
     }
-  }, [servicesData]);
+  }, [servicesData, onServicesChange]);
 
   const resetForm = () => {
     setFormData({
@@ -380,24 +405,36 @@ const BotConfigForm = () => {
 
   const [activeTab, setActiveTab] = useState<'config' | 'services'>('config');
   const [config, setConfig] = useState<Partial<BotConfig>>({});
+  const [services, setServices] = useState<Service[]>([]);
   const [generatedPrompt, setGeneratedPrompt] = useState<string>('');
   const [showPreview, setShowPreview] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Load services when config is available
+  const { data: servicesData } = useFetch(
+    () => config.id ? servicesApi.getAll(config.id) : Promise.resolve({ success: true, data: [] }),
+    [config.id]
+  );
 
   // Update config when data loads
   useEffect(() => {
     if (initialConfig?.data) {
       setConfig(initialConfig.data);
-      const prompt = generateSystemPrompt(initialConfig.data);
-      setGeneratedPrompt(prompt);
     }
   }, [initialConfig]);
 
-  // Update generated prompt when config changes
+  // Update services when data loads
   useEffect(() => {
-    const prompt = generateSystemPrompt(config);
+    if (servicesData?.data) {
+      setServices(servicesData.data);
+    }
+  }, [servicesData]);
+
+  // Update generated prompt when config or services change
+  useEffect(() => {
+    const prompt = generateSystemPrompt(config, services);
     setGeneratedPrompt(prompt);
-  }, [config]);
+  }, [config, services]);
 
   const handleInputChange = (field: keyof BotConfig, value: any) => {
     setConfig(prev => ({
@@ -663,7 +700,10 @@ const BotConfigForm = () => {
         </form>
       ) : (
         config.id ? (
-          <ServicesManagement botConfigId={config.id} />
+          <ServicesManagement 
+            botConfigId={config.id} 
+            onServicesChange={setServices}
+          />
         ) : (
           <div className="flex items-center justify-center p-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

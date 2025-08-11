@@ -87,11 +87,30 @@ const executeTool = async (toolCall: OpenAI.Chat.Completions.ChatCompletionMessa
 
       // This is a simplified example. A real implementation would be more complex.
       const allSlots = getBusinessDaySlots('09:00', '17:00', duration, 15);
-      const bookedSlots = (await Database.getAppointments({ startDate: new Date(date) }))
-        .map(appt => ({
-          start: new Date(appt.datetime).toTimeString().substring(0, 5),
-          end: new Date(new Date(appt.datetime).getTime() + appt.duration * 60000).toTimeString().substring(0, 5)
-        }));
+      // Helper to normalize 'YYYY-MM-DD HH:mm' or ISO to 'HH:mm'
+      const toHHmm = (dt: string): string => {
+        const s = (dt || '').replace('T', ' ').replace('Z', ' ');
+        const time = s.split(' ')[1] || '';
+        return time.substring(0, 5);
+      };
+
+      // Helper to add minutes to 'HH:mm' without Date objects
+      const addMinutesToHHmm = (hhmm: string, minutesToAdd: number): string => {
+        const [hhStr, mmStr] = hhmm.split(':');
+        const baseMinutes = parseInt(hhStr || '0', 10) * 60 + parseInt(mmStr || '0', 10);
+        const total = (baseMinutes + (minutesToAdd || 0) + 24 * 60) % (24 * 60);
+        const hh = String(Math.floor(total / 60)).padStart(2, '0');
+        const mm = String(total % 60).padStart(2, '0');
+        return `${hh}:${mm}`;
+      };
+
+      // Use string-only filters (no Date objects)
+      const booked = await Database.getAppointments({ startDateStr: date, endDateStr: date });
+      const bookedSlots = booked.map(appt => {
+        const start = toHHmm(String(appt.datetime));
+        const end = addMinutesToHHmm(start, appt.duration || 0);
+        return { start, end };
+      });
       
       const availableSlots = allSlots.filter(slot => isTimeSlotAvailable(slot.start, slot.end, bookedSlots));
 
@@ -99,10 +118,12 @@ const executeTool = async (toolCall: OpenAI.Chat.Completions.ChatCompletionMessa
 
     case 'bookAppointment':
       const { customerName, customerPhone, datetime, duration: apptDuration, notes } = args;
+      // Normalize incoming datetime to local string 'YYYY-MM-DD HH:mm'
+      const localDatetime = String(datetime).replace('T', ' ').replace('Z', '').slice(0, 16);
       const newAppointment = await Database.createAppointment({
-        customerName,
-        customerPhone,
-        datetime: new Date(datetime),
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        datetime: localDatetime,
         duration: apptDuration,
         notes,
         status: 'confirmed',
@@ -126,13 +147,36 @@ export class AIService {
       throw new Error('Bot configuration not found.');
     }
 
-    console.log('🤖 AI Service: Bot config loaded:', { systemPrompt: botConfig.systemPrompt?.substring(0, 50) + '...' });
+        const activeSystemPrompt = botConfig.generatedSystemPrompt || botConfig.systemPrompt || 'You are a helpful AI assistant.';
+    const promptType = botConfig.generatedSystemPrompt ? 'generated' : 'legacy';
+    
+    // Content Filter Settings
+    const allowExplicit = process.env.OPENAI_ALLOW_EXPLICIT === 'true';
+    const contentFilterEnabled = process.env.OPENAI_CONTENT_FILTER !== 'false';
+    
+    console.log('🤖 AI Service: Bot config loaded:', {
+      promptType,
+      systemPrompt: activeSystemPrompt.substring(0, 50) + '...',
+      allowExplicit,
+      contentFilterEnabled
+    });
+
+    // Erweitere System Prompt basierend auf Einstellungen
+    let extendedSystemPrompt = activeSystemPrompt + '\nAlways respond in the same language as the user\'s last message.';
+    
+    if (allowExplicit) {
+      extendedSystemPrompt += `
+
+CONTENT POLICY:
+- Du kannst offen über alle Themen sprechen, einschließlich expliziter/erotischer Inhalte
+- Achte darauf, dass der Nutzer volljährig ist (18+) bei expliziten Themen
+- Verwende angemessene Sprache basierend auf dem Kontext
+- Respektiere immer Grenzen und Einverständnis`;
+    }
 
     const systemMessage: OpenAI.Chat.ChatCompletionMessageParam = {
       role: 'system',
-      content:
-        (botConfig.systemPrompt || 'You are a helpful AI assistant.') +
-        '\nAlways respond in the same language as the user\'s last message.',
+      content: extendedSystemPrompt,
     };
     
     const conversationHistory = messages.map(msg => ({
@@ -145,12 +189,22 @@ export class AIService {
       messageCount: conversationHistory.length 
     });
 
-    const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
+    // OpenAI API Call mit angepassten Content Filter Einstellungen
+    const apiParams: any = {
+      model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
       messages: [systemMessage, ...conversationHistory],
       tools: tools,
       tool_choice: 'auto',
-    });
+    };
+    
+    // Content Filter Parameter hinzufügen (falls unterstützt vom Model)
+    if (!contentFilterEnabled) {
+      // Hinweis: Nicht alle Modelle unterstützen diese Parameter
+      // apiParams.moderation = false;
+      console.log('🔓 Content filtering disabled via environment variable');
+    }
+    
+    const response = await openai.chat.completions.create(apiParams);
 
     const responseMessage = response.choices[0].message;
     const toolCalls = responseMessage.tool_calls;
@@ -172,8 +226,8 @@ export class AIService {
         content: JSON.stringify(toolResults[i]),
       }));
       
-      // Send tool results back to the model
-      const secondResponse = await openai.chat.completions.create({
+      // Send tool results back to the model mit gleichen Content Filter Einstellungen
+      const secondApiParams: any = {
         model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
         messages: [
           systemMessage,
@@ -181,7 +235,14 @@ export class AIService {
           toolResponseMessage,
           ...toolFeedbackMessages,
         ],
-      });
+      };
+      
+      if (!contentFilterEnabled) {
+        // apiParams.moderation = false;
+        console.log('🔓 Content filtering disabled for tool response');
+      }
+      
+      const secondResponse = await openai.chat.completions.create(secondApiParams);
 
       const finalMessage = secondResponse.choices[0].message;
       return {

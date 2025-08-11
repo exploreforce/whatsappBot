@@ -1,9 +1,41 @@
 import { Database } from '../models/database';
 import { AIService } from './aiService';
 import { TestChatSession, ChatMessage, DbChatMessage } from '../types';
+import { TypingDelayService } from '../utils/typingDelay';
 import axios, { AxiosError } from 'axios';
 
 class WhatsAppService {
+  /**
+   * Sendet "typing"-Indikator an WhatsApp (falls verfügbar)
+   */
+  private async sendTypingIndicator(to: string): Promise<void> {
+    // WhatsApp Business API typing indicator (optional - not all versions support this)
+    const url = `https://graph.facebook.com/v19.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
+    const data = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'text',
+      text: {
+        preview_url: false,
+        body: '...' // Minimal message to simulate typing
+      }
+    };
+
+    try {
+      await axios.post(url, data, {
+        headers: {
+          'Authorization': `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      console.log(`⌨️ Typing indicator sent to ${to}`);
+    } catch (error) {
+      // Typing indicator is optional, don't log errors
+      console.log(`⌨️ Typing indicator not supported or failed for ${to}`);
+    }
+  }
+
   async findOrCreateSession(phoneNumber: string): Promise<TestChatSession> {
     // For now, we'll create a new session each time since the Database class
     // doesn't have phone-specific session methods
@@ -39,31 +71,99 @@ class WhatsAppService {
     }
   }
 
-  async handleIncomingMessage(from: string, messageBody: string) {
-    const session = await this.findOrCreateSession(from);
-
+  /**
+   * Gemeinsame Logik für Nachrichtenverarbeitung (WhatsApp und Test Chat)
+   * @param sessionId Session ID
+   * @param messageBody User Nachrichteninhalt
+   * @param context Kontext für Logging (z.B. "WhatsApp (+49123456789)" oder "Test Chat (abc123)")
+   * @param sendToWhatsApp Ob die Nachricht tatsächlich über WhatsApp gesendet werden soll
+   * @param whatsappRecipient WhatsApp Empfänger (nur wenn sendToWhatsApp = true)
+   */
+  private async processMessage(
+    sessionId: string, 
+    messageBody: string, 
+    context: string, 
+    sendToWhatsApp: boolean = false,
+    whatsappRecipient?: string
+  ): Promise<ChatMessage | null> {
+    // User Nachricht speichern
     const userMessageData: DbChatMessage = {
-      session_id: session.id,
+      session_id: sessionId,
       role: 'user',
       content: messageBody,
       timestamp: new Date(),
     };
     await Database.addChatMessage(userMessageData);
 
-    const messageHistory = await this.getMessageHistory(session.id);
+    const messageHistory = await this.getMessageHistory(sessionId);
 
-    const aiResponse = await AIService.getChatResponse(messageHistory, session.id);
+    console.log(`🤖 ${context}: Generating AI response...`);
+    const aiResponse = await AIService.getChatResponse(messageHistory, sessionId);
 
     if (aiResponse.content) {
+      // AI Response als "draft" speichern
       const aiMessageData: DbChatMessage = {
-        session_id: session.id,
+        session_id: sessionId,
         role: 'assistant',
         content: aiResponse.content,
         timestamp: new Date(),
         metadata: { ...aiResponse.metadata, status: 'draft' },
       };
-      await Database.addChatMessage(aiMessageData);
+      const savedMessage = await Database.addChatMessage(aiMessageData);
+
+      // Realistische Typing-Verzögerung hinzufügen
+      await TypingDelayService.applyTypingDelay(aiResponse.content, context);
+      
+      // Optional: WhatsApp Message senden
+      if (sendToWhatsApp && whatsappRecipient) {
+        // Optional: Typing-Indikator senden (falls unterstützt)
+        // await this.sendTypingIndicator(whatsappRecipient);
+        
+        await this.sendMessage(whatsappRecipient, aiResponse.content);
+      }
+      
+      // Status auf "sent" aktualisieren
+      if (savedMessage?.id) {
+        await Database.updateChatMessage(savedMessage.id.toString(), {
+          session_id: sessionId,
+          role: 'assistant',
+          content: aiResponse.content,
+          timestamp: new Date(),
+          metadata: { ...aiResponse.metadata, status: 'sent' },
+        });
+        
+        // Return the updated message for Test Chat
+        return {
+          id: savedMessage.id,
+          role: 'assistant',
+          content: aiResponse.content,
+          timestamp: new Date(),
+          metadata: { ...aiResponse.metadata, status: 'sent' },
+        };
+      }
     }
+    
+    return null;
+  }
+
+  async handleIncomingMessage(from: string, messageBody: string): Promise<void> {
+    const session = await this.findOrCreateSession(from);
+    await this.processMessage(
+      session.id, 
+      messageBody, 
+      `WhatsApp (${from})`, 
+      true, // WhatsApp senden
+      from   // WhatsApp Empfänger
+    );
+  }
+
+  async handleTestMessage(sessionId: string, messageBody: string): Promise<ChatMessage | null> {
+    return await this.processMessage(
+      sessionId, 
+      messageBody, 
+      `Test Chat (${sessionId})`, 
+      false // NICHT über WhatsApp senden
+    );
   }
 
   async sendDraftMessage(sessionId: string, to: string): Promise<void> {

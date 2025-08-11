@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
 import { Database } from '../models/database';
-import { AIService } from '../services/aiService';
+import { whatsappService } from '../services/whatsappService';
 import { ChatMessage } from '../types';
 
 const router = Router();
@@ -10,8 +10,16 @@ const router = Router();
 router.get(
   '/config',
   asyncHandler(async (req: Request, res: Response) => {
+    console.log('🔍 Bot API: Getting bot configuration...');
     const config = await Database.getBotConfig();
+    console.log('🔍 Bot API: Bot config retrieved:', {
+      hasConfig: !!config,
+      configId: config?.id,
+      configData: config ? 'Present' : 'Missing'
+    });
+    
     res.json({
+      success: true,
       message: 'Bot configuration retrieved',
       data: config,
     });
@@ -24,13 +32,14 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     const updatedConfig = await Database.updateBotConfig(req.body);
     res.json({
+      success: true,
       message: 'Bot configuration updated',
       data: updatedConfig,
     });
   })
 );
 
-// Test chat endpoint
+// Test chat endpoint - verwendet identische Logik wie WhatsApp Chat
 router.post(
   '/test-chat',
   asyncHandler(async (req: Request, res: Response) => {
@@ -39,7 +48,7 @@ router.post(
       sessionId: string;
     };
 
-    console.log('Test chat request:', { sessionId, messagesCount: messages?.length });
+    console.log('🔵 Test chat request:', { sessionId, messagesCount: messages?.length });
 
     if (!sessionId) {
       return res.status(400).json({ error: 'Session ID is required' });
@@ -49,34 +58,29 @@ router.post(
       return res.status(400).json({ error: 'Messages are required' });
     }
 
-    // Store user message
+    // Get the last user message
     const userMessage = messages[messages.length - 1];
-    console.log('Storing user message:', { sessionId, role: userMessage.role, content: userMessage.content });
     
-    await Database.addChatMessage({
-      session_id: sessionId,
-      role: userMessage.role,
-      content: userMessage.content,
-      timestamp: new Date(userMessage.timestamp),
-    });
+    if (userMessage.role !== 'user') {
+      return res.status(400).json({ error: 'Last message must be from user' });
+    }
 
-    // Get AI response
-    const aiResponse = await AIService.getChatResponse(messages, sessionId);
+    console.log('📝 Processing user message:', { sessionId, content: userMessage.content });
 
-    // Store AI response
-    const storedAiResponse = await Database.addChatMessage({
-      session_id: sessionId,
-      role: aiResponse.role,
-      content: aiResponse.content,
-      timestamp: new Date(aiResponse.timestamp),
-      metadata: aiResponse.metadata,
-    });
+    // Use identical logic as WhatsApp chat (but without sending to WhatsApp)
+    const aiResponse = await whatsappService.handleTestMessage(sessionId, userMessage.content);
     
+    // Update session activity
     await Database.updateChatSessionActivity(sessionId);
 
+    if (!aiResponse) {
+      return res.status(500).json({ error: 'Failed to generate AI response' });
+    }
+
+    console.log(`✅ Test Chat: Response completed for session ${sessionId}`);
     return res.json({
       data: {
-        response: storedAiResponse,
+        response: aiResponse,
       }
     });
   })

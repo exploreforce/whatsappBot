@@ -6,10 +6,14 @@ export const generateTimeSlots = (
   schedule: WeeklySchedule,
   duration: number
 ): TimeSlot[] => {
+  if (!schedule) {
+    return [];
+  }
+  
   const dayOfWeek = date.format('dddd').toLowerCase();
   const daySchedule = schedule[dayOfWeek];
 
-  if (!daySchedule || !daySchedule.isAvailable) {
+  if (!daySchedule || !daySchedule.isAvailable || !daySchedule.timeSlots || daySchedule.timeSlots.length === 0) {
     return [];
   }
 
@@ -33,6 +37,9 @@ export const generateTimeSlots = (
 };
 
 export const isBlackoutDate = (date: moment.Moment, blackoutDates: BlackoutDate[]): boolean => {
+  if (!blackoutDates || blackoutDates.length === 0) {
+    return false;
+  }
   return blackoutDates.some(bd => {
     const blackout = moment.utc(bd.date);
     return blackout.isSame(date, 'day');

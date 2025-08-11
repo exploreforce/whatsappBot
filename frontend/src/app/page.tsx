@@ -25,7 +25,7 @@ export default function Dashboard() {
                 Configuration
               </Link>
               <Link
-                href="/calendar"
+                href="/calendar-new"
                 className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Calendar
@@ -183,7 +183,7 @@ export default function Dashboard() {
                   Manage your availability, view appointments, and set up your schedule.
                 </p>
                 <Link
-                  href="/calendar"
+                  href="/calendar-new"
                   className="text-primary-600 hover:text-primary-500 font-medium"
                 >
                   View calendar →

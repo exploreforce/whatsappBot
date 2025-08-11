@@ -23,7 +23,17 @@ api.interceptors.response.use(
 // Bot Configuration API
 export const botApi = {
   getConfig: async (): Promise<ApiResponse<BotConfig>> => {
-    return api.get('/bot/config');
+    console.log('🔍 botApi.getConfig: Making request to /bot/config');
+    try {
+      const result = await api.get('/bot/config') as ApiResponse<BotConfig>;
+      console.log('🔍 botApi.getConfig: Raw result:', result);
+      console.log('🔍 botApi.getConfig: Result has ID?', !!result?.data?.id);
+      console.log('🔍 botApi.getConfig: Result ID:', result?.data?.id);
+      return result;
+    } catch (error) {
+      console.error('❌ botApi.getConfig: Failed:', error);
+      throw error;
+    }
   },
 
   updateConfig: async (config: Partial<BotConfig>): Promise<ApiResponse<BotConfig>> => {
@@ -94,7 +104,17 @@ export const calendarApi = {
 // Services API
 export const servicesApi = {
   getAll: async (botConfigId: string): Promise<ApiResponse<Service[]>> => {
-    return api.get(`/services/${botConfigId}`);
+    console.log('🔍 servicesApi.getAll: Called with botConfigId:', botConfigId);
+    console.log('🔍 servicesApi.getAll: Making request to:', `/services/${botConfigId}`);
+    
+    try {
+      const result = await api.get(`/services/${botConfigId}`) as ApiResponse<Service[]>;
+      console.log('🔍 servicesApi.getAll: Raw API result:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ servicesApi.getAll: API call failed:', error);
+      throw error;
+    }
   },
 
   create: async (botConfigId: string, service: CreateServiceRequest): Promise<ApiResponse<Service>> => {

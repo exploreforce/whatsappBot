@@ -75,43 +75,180 @@ export class Database {
     return this.getBotConfig() as Promise<BotConfig>;
   }
 
-  // Appointment operations
+  // Appointment operations (NO DATE OBJECTS - STRING ONLY!)
   static async getAppointments(filters: {
-    startDate?: Date;
-    endDate?: Date;
+    startDateStr?: string;
+    endDateStr?: string;
     status?: string;
   } = {}): Promise<Appointment[]> {
-    let query = db('appointments').select('*');
-    
-    if (filters.startDate) {
-      query = query.where('datetime', '>=', filters.startDate);
+    try {
+      console.log('🔍 Database.getAppointments called with STRING filters:', {
+        startDateStr: filters.startDateStr,
+        endDateStr: filters.endDateStr,
+        status: filters.status
+      });
+
+      let query = db('appointments').select('*');
+      
+      if (filters.startDateStr) {
+        // Use date string directly with 00:00 time
+        const startDateTimeStr = `${filters.startDateStr} 00:00`;
+        console.log('🔍 Adding startDate filter (LOCAL STRING): datetime >=', startDateTimeStr);
+        query = query.where('datetime', '>=', startDateTimeStr);
+      }
+      
+      if (filters.endDateStr) {
+        // Use date string directly with 23:59 time
+        const endDateTimeStr = `${filters.endDateStr} 23:59`;
+        console.log('🔍 Adding endDate filter (LOCAL STRING): datetime <=', endDateTimeStr);
+        query = query.where('datetime', '<=', endDateTimeStr);
+      }
+      if (filters.status) {
+        console.log('🔍 Adding status filter:', filters.status);
+        query = query.where('status', filters.status);
+      }
+      
+      console.log('🔍 Executing query:', query.toString());
+      
+      const results = await query.orderBy('datetime', 'asc');
+      
+      console.log('🔍 Raw database results:', {
+        count: results?.length || 0,
+        results: results?.map(r => ({
+          id: r.id,
+          customer_name: r.customer_name,
+          datetime: r.datetime,
+          datetimeType: typeof r.datetime,
+          status: r.status
+        })) || []
+      });
+      
+      // Transform snake_case to camelCase (NO TIMEZONE CONVERSION!)
+      return (results || []).map(row => ({
+        id: row.id,
+        customerName: row.customer_name,
+        customerPhone: row.customer_phone,
+        customerEmail: row.customer_email,
+        datetime: row.datetime, // Keep as string - NO Date conversion!
+        duration: row.duration,
+        status: row.status,
+        notes: row.notes,
+        appointmentType: row.appointment_type,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      }));
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      return [];
     }
-    if (filters.endDate) {
-      query = query.where('datetime', '<=', filters.endDate);
-    }
-    if (filters.status) {
-      query = query.where('status', filters.status);
-    }
-    
-    return query.orderBy('datetime', 'asc');
   }
 
-  static async createAppointment(appointment: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>): Promise<Appointment> {
+  static async createAppointment(appointment: any): Promise<Appointment> {
+    console.log('📝 Database.createAppointment called with:', appointment);
+    
     const [created] = await db('appointments')
       .insert(appointment)
       .returning('*');
-    return created;
+    
+    console.log('📝 Database.createAppointment result:', {
+      id: created.id,
+      datetime: created.datetime,
+      datetimeType: typeof created.datetime
+    });
+    
+    // Transform snake_case back to camelCase for API response
+    // NO TIMEZONE CONVERSION - keep datetime as-is
+    return {
+      id: created.id,
+      customerName: created.customer_name,
+      customerPhone: created.customer_phone,
+      customerEmail: created.customer_email,
+      datetime: created.datetime, // Keep as string - no Date conversion
+      duration: created.duration,
+      status: created.status,
+      notes: created.notes,
+      appointmentType: created.appointment_type,
+      createdAt: new Date(created.created_at),
+      updatedAt: new Date(created.updated_at)
+    };
   }
 
   static async updateAppointment(id: string, updates: Partial<Appointment>): Promise<Appointment | null> {
+    console.log('🔄 Database.updateAppointment called:', {
+      id,
+      updates,
+      datetimeInUpdates: updates.datetime,
+      datetimeType: typeof updates.datetime
+    });
+
+    // NO TIMEZONE CONVERSION - store datetime as-is
+    const processedUpdates: any = { ...updates };
+    
+    if (updates.datetime) {
+      console.log('🔄 Processing datetime update (NO TIMEZONE CONVERSION):', updates.datetime);
+      
+      // Keep datetime as string - no Date object conversion to avoid timezone issues
+      if (typeof updates.datetime === 'string') {
+        // Format: "2025-08-12 11:00" or "2025-08-12T11:00:00"
+        const datetimeStr = (updates.datetime as string).replace('T', ' ').slice(0, 16);
+        processedUpdates.datetime = datetimeStr;
+        console.log('🔄 Using datetime as LOCAL string:', processedUpdates.datetime);
+      } else if (updates.datetime instanceof Date) {
+        // Convert Date to local datetime string to avoid timezone conversion
+        const dateObj = updates.datetime as Date;
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const hour = String(dateObj.getHours()).padStart(2, '0');
+        const minute = String(dateObj.getMinutes()).padStart(2, '0');
+        processedUpdates.datetime = `${year}-${month}-${day} ${hour}:${minute}`;
+        console.log('🔄 Converted Date to LOCAL string:', processedUpdates.datetime);
+      } else if (updates.datetime) {
+        // Handle any other format by converting to string first
+        const datetimeStr = String(updates.datetime).replace('T', ' ').slice(0, 16);
+        processedUpdates.datetime = datetimeStr;
+        console.log('🔄 Converted unknown type to LOCAL string:', processedUpdates.datetime);
+      }
+      
+      console.log('🔄 Final datetime for DB update (LOCAL):', {
+        value: processedUpdates.datetime,
+        type: typeof processedUpdates.datetime,
+        message: 'Stored as local datetime string without timezone'
+      });
+    }
+
     const [updated] = await db('appointments')
       .where('id', id)
       .update({
-        ...updates,
+        ...processedUpdates,
         updated_at: new Date()
       })
       .returning('*');
-    return updated || null;
+    
+    console.log('🔄 Database update result:', {
+      found: !!updated,
+      updatedDatetime: updated?.datetime,
+      updatedDatetimeType: typeof updated?.datetime
+    });
+
+    if (updated) {
+      // Transform back to camelCase
+      return {
+        id: updated.id,
+        customerName: updated.customer_name,
+        customerPhone: updated.customer_phone,
+        customerEmail: updated.customer_email,
+        datetime: updated.datetime,
+        duration: updated.duration,
+        status: updated.status,
+        notes: updated.notes,
+        appointmentType: updated.appointment_type,
+        createdAt: new Date(updated.created_at),
+        updatedAt: new Date(updated.updated_at)
+      };
+    }
+    
+    return null;
   }
 
   static async deleteAppointment(id: string): Promise<boolean> {
@@ -126,15 +263,37 @@ export class Database {
 
   // Availability operations
   static async getAvailabilityConfig(): Promise<AvailabilityConfig | null> {
-    const result = await db('availability_configs')
-      .where('is_active', true)
-      .first();
-    
-    if (result) {
-      result.weekly_schedule = JSON.parse(result.weekly_schedule);
+    try {
+      const result = await db('availability_configs')
+        .where('is_active', true)
+        .first();
+      
+      if (!result) {
+        return null;
+      }
+      
+      try {
+        result.weekly_schedule = JSON.parse(result.weekly_schedule || '{}');
+      } catch (jsonError) {
+        console.error('Error parsing weekly_schedule JSON:', jsonError);
+        result.weekly_schedule = {};
+      }
+      
+      // Load blackout dates from separate table
+      const blackoutDates = await this.getBlackoutDates();
+      
+      // Transform database fields to camelCase
+      return {
+        id: result.id,
+        weeklySchedule: result.weekly_schedule,
+        blackoutDates: blackoutDates || [],
+        createdAt: new Date(result.created_at),
+        updatedAt: new Date(result.updated_at)
+      };
+    } catch (error) {
+      console.error('Error fetching availability config:', error);
+      return null;
     }
-    
-    return result || null;
   }
 
   static async updateAvailabilityConfig(weeklySchedule: any): Promise<AvailabilityConfig> {
@@ -152,16 +311,22 @@ export class Database {
 
   // Blackout dates operations
   static async getBlackoutDates(startDate?: Date, endDate?: Date): Promise<BlackoutDate[]> {
-    let query = db('blackout_dates').select('*');
-    
-    if (startDate) {
-      query = query.where('date', '>=', startDate);
+    try {
+      let query = db('blackout_dates').select('*');
+      
+      if (startDate) {
+        query = query.where('date', '>=', startDate);
+      }
+      if (endDate) {
+        query = query.where('date', '<=', endDate);
+      }
+      
+      const results = await query.orderBy('date', 'asc');
+      return results || [];
+    } catch (error) {
+      console.error('Error fetching blackout dates:', error);
+      return [];
     }
-    if (endDate) {
-      query = query.where('date', '<=', endDate);
-    }
-    
-    return query.orderBy('date', 'asc');
   }
 
   static async addBlackoutDate(blackoutDate: Omit<BlackoutDate, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlackoutDate> {

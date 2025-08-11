@@ -305,7 +305,7 @@ const Calendar = () => {
     id: appt.id,
     title: `${appt.customerName || appt.customer_name} - ${appt.appointmentType || 'Termin'}`,
     start: new Date(appt.datetime),
-    end: moment(appt.datetime).add(appt.duration, 'minutes').toDate(),
+    end: new Date(new Date(appt.datetime).getTime() + appt.duration * 60000), // NO TIMEZONE CONVERSION
     resource: appt
   }));
 

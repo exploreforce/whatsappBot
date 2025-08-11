@@ -105,8 +105,10 @@ const CalendarNew: React.FC<CalendarNewProps> = ({ className = '' }) => {
   } as const;
 
   // Calendar configuration for Week/Day views
+  const calendarView: 'Week' | 'Day' | 'Resources' | 'Days' | 'WorkWeek' =
+    view === 'Week' || view === 'Day' ? view : 'Week';
   const calendarConfig = {
-    viewType: view,
+    viewType: calendarView,
     startDate: startDate,
     events: events,
     cellHeight: 30,

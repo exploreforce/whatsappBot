@@ -21,10 +21,19 @@ interface CalendarLocalProps {
   className?: string;
 }
 
+interface CalendarEvent {
+  id: string;
+  text: string;
+  start: any;
+  end: any;
+  backColor: string;
+  data: Appointment;
+}
+
 const CalendarLocal: React.FC<CalendarLocalProps> = ({ className = '' }) => {
   const [view, setView] = useState<'Month' | 'Week' | 'Day'>('Week');
   const [startDate, setStartDate] = useState<any>(null);
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [calendar, setCalendar] = useState<any>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);

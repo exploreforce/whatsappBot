@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFetch } from '@/hooks/useApi';
 import { appointmentsApi } from '@/utils/api';
-import { Appointment } from '@/types';
+import { Appointment, ApiResponse } from '@/types';
 import Button from '@/components/ui/Button';
 import { 
   CalendarDaysIcon,
@@ -46,13 +46,16 @@ const CalendarLocal: React.FC<CalendarLocalProps> = ({ className = '' }) => {
   }, []);
 
   // Fetch appointments data
-  const { data: appointmentsData, refetch: refetchAppointments } = useFetch(
+  const { data: appointmentsData, refetch: refetchAppointments } = useFetch<ApiResponse<Appointment[]>>(
     () => {
-      if (!startDate) return Promise.resolve({ data: [] });
+      if (!startDate) {
+        const empty: ApiResponse<Appointment[]> = { success: true, data: [] };
+        return Promise.resolve(empty);
+      }
       return appointmentsApi.getAll({
         startDate: startDate.firstDayOfMonth().toString('yyyy-MM-dd'),
         endDate: startDate.lastDayOfMonth().toString('yyyy-MM-dd'),
-      });
+      }) as Promise<ApiResponse<Appointment[]>>;
     },
     [startDate]
   );

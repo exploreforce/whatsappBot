@@ -102,7 +102,7 @@ const CalendarNew: React.FC<CalendarNewProps> = ({ className = '' }) => {
         }
       ]
     })
-  };
+  } as const;
 
   // Calendar configuration for Week/Day views
   const calendarConfig = {
@@ -114,9 +114,9 @@ const CalendarNew: React.FC<CalendarNewProps> = ({ className = '' }) => {
     hourWidth: 60,
     // Mobile optimizations
     cellHeaderHeight: 25,
-    timeRangeSelectedHandling: "Enabled",
-    eventMoveHandling: "Update",
-    eventResizeHandling: "Update",
+    timeRangeSelectedHandling: "Enabled" as const,
+    eventMoveHandling: "Update" as const,
+    eventResizeHandling: "Update" as const,
     // Event handling
     onEventClick: async (args: any) => {
       const appointment = args.e.data;
@@ -129,7 +129,7 @@ const CalendarNew: React.FC<CalendarNewProps> = ({ className = '' }) => {
       // TODO: Update appointment time via API
       console.log('Event moved:', args);
     }
-  };
+  } as const;
 
   // Export single event to ICS
   const exportSingleEventToICS = (appointment: Appointment) => {

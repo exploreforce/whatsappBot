@@ -73,8 +73,9 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
   const { data: botConfig } = useFetch(() => botApi.getConfig(), []);
   
   useEffect(() => {
-    if (botConfig?.id) {
-      servicesApi.getAll(botConfig.id).then(response => {
+    const botConfigId = botConfig?.data?.id;
+    if (botConfigId) {
+      servicesApi.getAll(botConfigId).then(response => {
         if (response.success && response.data) {
           setServices(response.data);
           // Set default service if available and form is empty
@@ -90,7 +91,7 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
         }
       }).catch(console.error);
     }
-  }, [botConfig?.id, formData.serviceId]);
+  }, [botConfig?.data?.id, formData.serviceId]);
 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);

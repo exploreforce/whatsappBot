@@ -86,20 +86,22 @@ const CalendarNew: React.FC<CalendarNewProps> = ({ className = '' }) => {
       console.log('Time range selected:', args.start, args.end);
     },
     // Mobile-friendly context menu
-    contextMenu: new DayPilot.Menu([
-      {
-        text: "View Details",
-        onClick: (args: any) => {
-          // TODO: Show appointment details
+    contextMenu: new DayPilot.Menu({
+      items: [
+        {
+          text: "View Details",
+          onClick: (args: any) => {
+            // TODO: Show appointment details
+          }
+        },
+        {
+          text: "Export to ICS",
+          onClick: (args: any) => {
+            exportSingleEventToICS(args.source.data);
+          }
         }
-      },
-      {
-        text: "Export to ICS",
-        onClick: (args: any) => {
-          exportSingleEventToICS(args.source.data);
-        }
-      }
-    ])
+      ]
+    })
   };
 
   // Calendar configuration for Week/Day views

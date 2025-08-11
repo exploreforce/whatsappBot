@@ -35,6 +35,9 @@ logs/
 .DS_Store
 Thumbs.db
 
+# Secrets/keys
+*.pem
+
 # Dependencies
 node_modules/
 npm-debug.log*

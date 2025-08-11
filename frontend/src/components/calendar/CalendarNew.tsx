@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { DayPilot, DayPilotCalendar, DayPilotMonth } from "@daypilot/daypilot-lite-react";
 import { useFetch } from '@/hooks/useApi';
 import { appointmentsApi } from '@/utils/api';
-import { Appointment } from '@/types';
+import { Appointment, ApiResponse } from '@/types';
 import moment from 'moment';
 import Button from '@/components/ui/Button';
 import { 
@@ -20,14 +20,22 @@ interface CalendarNewProps {
 const CalendarNew: React.FC<CalendarNewProps> = ({ className = '' }) => {
   const [view, setView] = useState<'Month' | 'Week' | 'Day'>('Month');
   const [startDate, setStartDate] = useState(DayPilot.Date.today());
-  const [events, setEvents] = useState([]);
+  interface CalendarEvent {
+    id: string;
+    text: string;
+    start: DayPilot.Date;
+    end: DayPilot.Date;
+    backColor: string;
+    data: Appointment;
+  }
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
 
   // Fetch appointments data
-  const { data: appointmentsData, refetch: refetchAppointments } = useFetch(
+  const { data: appointmentsData, refetch: refetchAppointments } = useFetch<ApiResponse<Appointment[]>>(
     () => appointmentsApi.getAll({
       startDate: startDate.firstDayOfMonth().toString('yyyy-MM-dd'),
       endDate: startDate.lastDayOfMonth().toString('yyyy-MM-dd'),
-    }),
+    }) as Promise<ApiResponse<Appointment[]>>,
     [startDate]
   );
 

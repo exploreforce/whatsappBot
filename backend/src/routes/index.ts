@@ -4,6 +4,7 @@ import calendarRoutes from './calendar';
 import appointmentRoutes from './appointments';
 import whatsappRoutes from './whatsapp';
 import servicesRoutes from './services';
+import authRoutes from './auth';
 
 const router = Router();
 
@@ -13,6 +14,7 @@ router.use('/calendar', calendarRoutes);
 router.use('/appointments', appointmentRoutes);
 router.use('/whatsapp', whatsappRoutes);
 router.use('/services', servicesRoutes);
+router.use('/auth', authRoutes);
 
 // API info endpoint
 router.get('/', (req, res) => {
